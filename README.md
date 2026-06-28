@@ -1,1 +1,1 @@
-# -Tech4Biz-Determ8
+# Tech4Biz-Determ8
