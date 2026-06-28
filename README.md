@@ -1,123 +1,243 @@
+<div align="center">
+
 # Determ8
 
-**The deterministic gate for agentic systems.**
+### The deterministic gate for agentic systems.
 
-Determ8 by Tech4Biz
+**The agent proposes. The pipeline proves. Same input, same verdict, every time.**
+
+*by [Tech4Biz Solutions](mailto:contact@tech4biz.io)*
+
+</div>
 
 ---
 
 ## The problem
 
-AI agents are probabilistic. Ask the same question twice, you can get two answers. That is fine for chat. It is unacceptable for a loan decision, a medical claim, a payment, or any regulated workflow.
+AI agents are probabilistic. Ask the same question twice, you can get two answers. That is fine for a chatbot. It is unacceptable for a loan decision, a medical claim, a payment, or any regulated workflow.
 
-Enterprises will not put agents into production where "usually right" is the guarantee.
+Enterprises will not put agents into production where "usually right" is the only guarantee.
 
-## What Determ8 does
-
-Determ8 wraps a probabilistic model in a deterministic pipeline. The model proposes. The pipeline proves or rejects. Same input, same verdict, every time.
-
-The intelligence stays probabilistic. The correctness layer is pure algorithm.
-
-```
-Request  ->  Agent proposes  ->  [ Gate -> Gate -> Gate ]  ->  Verdict (pass / fail)  ->  Signed audit log
-```
-
-Every gate answers one question deterministically. Cheap gates run first. Expensive gates run last. The pipeline stops at the first failure.
+Determ8 fixes this. It wraps a probabilistic model in a **deterministic pipeline**. The model stays probabilistic. The correctness layer around it is pure algorithm. The agent proposes a candidate answer. The pipeline proves it or rejects it. The same input always produces the same verdict.
 
 ---
 
 ## How it works
 
-Determ8 is built on one contract. Every gate is a plug-in that implements the same signature:
+![Determ8 architecture](docs/assets/architecture.svg)
 
+A request comes in. The agent proposes a candidate. That candidate is **not trusted yet**. It enters the pipeline and passes through a series of gates, one at a time. Each gate answers exactly one question deterministically: pass or fail. Cheap gates run first. Expensive gates run last. The moment a gate fails, the pipeline stops and rejects the candidate. Only a candidate that clears every gate is shipped, and every run is logged so it can be replayed and audited.
+
+The whole framework rests on **one contract**. Every gate, free or paid, implements the same interface:
+
+```python
+gate(candidate, spec) -> Verdict(passed, reason, proof)
 ```
-gate(candidate, spec) -> { pass: bool, reason: str, proof: object }
-```
 
-The pipeline runner chains gates in a declared order, stops on the first failure, and logs every result. You add gates one at a time. You configure which gates run per project.
-
-The determinism guarantee is simple: same input plus same gate config produces the same verdict, always.
+Because every gate looks the same to the pipeline, you add gates one at a time, configure which run per project, and even write your own. The determinism guarantee is simple: **same input plus same gate config produces the same verdict, always.**
 
 ---
 
-## Free vs Paid
+## One contract, two tiers
 
-Determ8 is open core. The free tier gives you a real, working deterministic pipeline. The paid tier gives you the proof and compliance that regulated industries cannot ship without.
+![Free vs Pro gates](docs/assets/tiers.svg)
 
-### Free (Open Source)
+Determ8 is **open core**. The free tier is a real, working deterministic pipeline. The paid tier adds the formal proof and compliance that regulated industries cannot ship without.
 
-The framework skeleton and the fast structural gates. Enough to build a working pipeline and run it end to end.
+### Free (this repository)
 
-| Gate | Algorithm | Question it answers |
-|------|-----------|---------------------|
-| Pipeline Runner | Gate-chaining engine | Did the candidate clear every gate in order? |
-| Schema Gate | JSON Schema, grammar, parsers | Is the output the exact required shape? |
-| FSM Gate | Finite State Machine | Did the agent follow the steps in legal order? |
-| Idempotency Gate | SHA-256 hashing, cache keys | Did this same request already run? |
-| Graph Gate | DAG validation, topological sort | Are tasks in valid order with no cycles? |
+| Gate | Question it answers | Algorithm |
+|------|--------------------|-----------|
+| **Schema Gate** | Is the output the exact required shape? | JSON Schema |
+| **FSM Gate** | Did the agent follow the steps in legal order? | Finite state machine |
+| **Idempotency Gate** | Did this exact request already run? | SHA-256 hashing |
+| **Graph Gate** | Are tasks in valid order with no cycles? | DAG validation, topological sort |
 
-This is everything you need to wire up a deterministic pipeline, see it run, and trust the pattern.
+Everything you need to wire up a deterministic pipeline, run it end to end, and trust the pattern.
 
-### Paid (Determ8 Pro)
+### Determ8 Pro (commercial)
 
-The hard, defensible gates. Formal proof, domain compliance, and audit-grade trails. This is what banks, hospitals, and insurers pay for.
+The hard, defensible gates. This is what banks, hospitals, and insurers pay for.
 
-| Gate | Algorithm | Question it answers |
-|------|-----------|---------------------|
-| Formal Verification Gate | Z3 / SMT solvers | Is the output provably correct against the spec? |
-| Rule Engine + Domain Packs | Drools, decision tables | Does it obey real-world regulation? |
-| Constraint Gate | Constraint solvers | Do all numbers and limits hold together? |
-| Audit Gate | Cryptographic signing, Merkle logs | Can we prove to a regulator nothing was altered? |
+| Gate | What you get | Why it matters |
+|------|-------------|----------------|
+| **Formal Verification Gate** | Z3 / SMT solver proves the output is mathematically equivalent to the spec | Not "looks right", but *provably* right. Code generation, financial math, eligibility logic. |
+| **Rule Engine + Domain Packs** | Prebuilt, maintained rule sets for banking, healthcare, insurance, KYC, and compliance | Stop hand-coding regulation. Drop in a pack that already encodes the policy. |
+| **Constraint Gate** | Constraint solver validates that every number, limit, and relationship holds together | Catches the impossible combination a schema check never could. |
+| **Audit Gate** | Cryptographically signed, Merkle-chained, regulator-grade replay of every decision | Prove to an auditor that nothing was altered. Turn incidents into forensics. |
 
-**Determ8 Pro also includes:**
+**Determ8 Pro also includes** multi-agent orchestration across gates, managed hosting, support, and SLAs.
 
-- Prebuilt domain packs: banking, healthcare, insurance, compliance.
-- Audit-grade signed replay for regulators.
-- Multi-agent orchestration across gates.
-- Managed hosting, support, and SLAs.
+> **Free gets you a pipeline that runs. Pro gets you a pipeline a regulator will accept.**
+
+Pricing, licensing, and full source: **contact@tech4biz.io**
 
 ---
 
-## Quick start (Free tier)
+## Install
 
 ```bash
 pip install determ8
 ```
 
+The Schema Gate needs the `jsonschema` extra:
+
+```bash
+pip install "determ8[schema]"
+```
+
+Requires Python 3.10 or newer.
+
+---
+
+## Quick start
+
+Three gates, end to end. This runs as-is.
+
 ```python
 from determ8 import Pipeline, SchemaGate, FSMGate, IdempotencyGate
 
+# 1. Declare what a valid answer looks like.
+schema = {
+    "type": "object",
+    "properties": {
+        "decision": {"enum": ["approve", "reject", "escalate"]},
+        "amount": {"type": "number", "minimum": 0},
+        "states": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["decision", "amount", "states"],
+}
+
+# 2. Declare the legal order of steps the agent must follow.
+workflow = {
+    "verify_identity": ["check_credit"],
+    "check_credit": ["decide"],
+    "decide": [],
+}
+
+# 3. Build the pipeline. Cheap gates first.
 pipeline = Pipeline(gates=[
     IdempotencyGate(),
-    SchemaGate(schema=loan_decision_schema),
-    FSMGate(states=loan_workflow),
+    SchemaGate(schema=schema),
+    FSMGate(transitions=workflow, start="verify_identity", accept=["decide"]),
 ])
 
-verdict = pipeline.run(candidate=agent_output, spec=loan_spec)
+# 4. Gate whatever the agent proposed.
+agent_output = {
+    "decision": "approve",
+    "amount": 25000,
+    "states": ["verify_identity", "check_credit", "decide"],
+}
 
-if verdict.passed:
-    ship(candidate)
+result = pipeline.run(agent_output)
+
+if result.passed:
+    print("Verified. Safe to act on.")
 else:
-    reject(verdict.reason)
+    print(f"Blocked by '{result.failed_gate}' gate: {result.reason}")
 ```
 
 The agent guesses. The pipeline proves. You never ship a guess, only a proven answer.
 
 ---
 
-## Example: loan eligibility agent
+## Using Determ8 in your project
 
-A bank wants an agent to read a loan application and decide approve, reject, or escalate. Every decision must be correct, follow regulation, and survive an audit.
+You never edit the library. You give it your rules. There are three ways to do that.
 
-1. Application comes in. Hashed, idempotency key assigned. Never processed twice.
-2. Agent reads it and proposes a decision.
-3. **Schema Gate** (free): is the output the right shape?
-4. **FSM Gate** (free): did the agent verify identity, then check credit, then decide?
-5. **Rule Gate** (Pro): does the decision obey lending policy and KYC?
-6. **Formal Verification Gate** (Pro): is the risk math provably correct?
-7. **Audit Gate** (Pro): sign and log the full trail for the regulator.
+### 1. Configure the built-in gates
 
-Free gets you a pipeline that runs. Pro gets you a pipeline a regulator will accept.
+The most common path. Pass your own schema, workflow, and limits as arguments. Your rules live in your code; Determ8 enforces them.
+
+```python
+from determ8 import Pipeline, SchemaGate, FSMGate
+
+pipeline = Pipeline(gates=[
+    SchemaGate(schema=my_schema),
+    FSMGate(transitions=my_workflow, start="start", accept=["done"]),
+])
+```
+
+### 2. Write your own gate
+
+For logic the built-ins do not cover, implement the same `Gate` contract in your own project and drop it into the pipeline like any built-in. This is why the single contract matters: anyone extends Determ8 without touching its source.
+
+```python
+from determ8 import Gate, Verdict
+
+class AmountCeilingGate(Gate):
+    name = "amount_ceiling"
+
+    def check(self, candidate, spec):
+        limit = spec or 5000
+        amount = candidate.get("amount", 0)
+        if amount <= limit:
+            return Verdict(passed=True, gate=self.name, reason="within limit")
+        return Verdict(
+            passed=False,
+            gate=self.name,
+            reason=f"amount {amount} exceeds limit {limit}",
+            proof={"amount": amount, "limit": limit},
+        )
+
+# use it exactly like a built-in gate
+from determ8 import Pipeline
+pipeline = Pipeline(gates=[AmountCeilingGate()])
+print(pipeline.run({"amount": 9000}, spec=5000).reason)
+```
+
+A gate must be a **pure function of `(candidate, spec)`**: no clocks, no randomness, no hidden state. That is what keeps the pipeline deterministic.
+
+### 3. Buy a Pro gate
+
+For formal proofs, domain rule packs, and audit trails, install `determ8-pro` and plug those gates in the same way. Same pipeline, same contract. Contact **contact@tech4biz.io**.
+
+---
+
+## Reading the result
+
+`pipeline.run()` returns a `PipelineResult`:
+
+```python
+result = pipeline.run(agent_output)
+
+result.passed        # True only if every gate passed
+result.failed_gate   # name of the first gate that failed, or None
+result.reason        # why it failed, or a success message
+result.input_hash    # deterministic SHA-256 of the candidate
+result.verdicts      # the full ordered trace, one Verdict per gate run
+result.to_dict()     # serializable record, ready for logging or audit
+```
+
+Each `Verdict` in the trace carries `passed`, `gate`, `reason`, and a structured `proof` dict (the schema errors, the illegal transition, the detected cycle, and so on).
+
+---
+
+## Per-gate specs
+
+When different gates need different specs, pass a dict keyed by gate name. Each gate receives its own entry.
+
+```python
+result = pipeline.run(candidate, spec={
+    "schema": my_schema,
+    "fsm": {"transitions": my_workflow, "start": "a", "accept": ["z"]},
+})
+```
+
+---
+
+## Logging and replay
+
+Attach a `RunLogger` to persist every run as append-only JSONL. Each record is deterministic, so any run can be replayed and audited. (The Pro Audit Gate adds cryptographic signing and Merkle chaining on top of this.)
+
+```python
+from determ8 import Pipeline, SchemaGate, RunLogger
+
+pipeline = Pipeline(
+    gates=[SchemaGate(schema=my_schema)],
+    logger=RunLogger("runs.jsonl"),
+)
+```
 
 ---
 
@@ -125,22 +245,36 @@ Free gets you a pipeline that runs. Pro gets you a pipeline a regulator will acc
 
 Anywhere an agent makes a decision that must be correct, auditable, or regulated.
 
-- Banking and finance: loans, payments, fraud, trading.
-- Healthcare: diagnosis support, medical billing, claims.
-- Insurance: claims approval, underwriting.
-- Legal and compliance: contract checks, KYC, regulatory filing.
-- Government: benefits and eligibility.
-- Critical infrastructure: energy, automotive, manufacturing.
+- **Banking and finance:** loans, payments, fraud, trading.
+- **Healthcare:** diagnosis support, medical billing, claims.
+- **Insurance:** claims approval, underwriting.
+- **Legal and compliance:** contract checks, KYC, regulatory filing.
+- **Government:** benefits and eligibility.
+- **Critical infrastructure:** energy, automotive, manufacturing.
 
 Low-stakes agents do not need this. High-stakes agents cannot ship without it.
 
 ---
 
+## Run the examples and tests
+
+```bash
+git clone https://github.com/Tech4Biz-Solutions-Pvt-Ltd/-Tech4Biz-Determ8.git
+cd -Tech4Biz-Determ8
+python -m venv .venv && source .venv/bin/activate
+python -m pip install -e ".[dev]"
+
+python -m pytest -q          # run the test suite
+python examples/loan_agent.py   # see every gate catch a real mistake
+```
+
+---
+
 ## License
 
-The open core is released under [LICENSE](LICENSE).
+The open core is released under the **Apache License 2.0**. See [LICENSE](LICENSE).
 
-Determ8 Pro gates, domain packs, and the managed service are commercially licensed and not included in this repository.
+Determ8 Pro gates, domain packs, and the managed service are commercially licensed and **not** included in this repository.
 
 ---
 
@@ -161,8 +295,14 @@ If you need the full source code with the paid features:
 
 Contact us. We will share pricing, licensing terms, and access to the full engine.
 
-**contact@tech4biz.io**
+### contact@tech4biz.io
 
 ---
 
-Determ8 by Tech4Biz. Restore stuck delivery. Ship proven answers.
+<div align="center">
+
+**Determ8 by Tech4Biz Solutions. Restore stuck delivery. Ship proven answers.**
+
+Determ8™ and Tech4Biz Solutions™ are trademarks of Tech4Biz Solutions.
+
+</div>
