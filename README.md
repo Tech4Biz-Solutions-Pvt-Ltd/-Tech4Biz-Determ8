@@ -24,7 +24,7 @@ Determ8 fixes this. It wraps a probabilistic model in a **deterministic pipeline
 
 ## How it works
 
-![Determ8 architecture](docs/assets/architecture.svg)
+![Determ8 architecture](docs/assets/architecture.png)
 
 A request comes in. The agent proposes a candidate. That candidate is **not trusted yet**. It enters the pipeline and passes through a series of gates, one at a time. Each gate answers exactly one question deterministically: pass or fail. Cheap gates run first. Expensive gates run last. The moment a gate fails, the pipeline stops and rejects the candidate. Only a candidate that clears every gate is shipped, and every run is logged so it can be replayed and audited.
 
@@ -40,7 +40,7 @@ Because every gate looks the same to the pipeline, you add gates one at a time, 
 
 ## One contract, two tiers
 
-![Free vs Pro gates](docs/assets/tiers.svg)
+![Free vs Pro gates](docs/assets/tiers.png)
 
 Determ8 is **open core**. The free tier is a real, working deterministic pipeline. The paid tier adds the formal proof and compliance that regulated industries cannot ship without.
 
